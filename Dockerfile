@@ -1,12 +1,18 @@
-FROM ubuntu:latest
+FROM ubuntu:bionic
  
+ENV DEBIAN_FRONTEND=noninteractive
+
+RUN echo 'America/Los_Angeles' > /etc/timezone
+
 RUN apt-get update -y
 
 # Requirements for SILC
-RUN apt-get install -y gcc libglib2.0-0 libglib2.0-dev libncurses5-dev libperl-dev
+RUN apt-get install -y gcc libglib2.0-0 libglib2.0-dev libncurses5-dev libperl-dev make
 
 # For gathering the packages
 RUN apt-get install -y wget
+
+RUN apt-get install -y strace
 
 RUN wget https://sourceforge.net/projects/silc/files/silc/client/sources/silc-client-1.1.11.tar.bz2
 
@@ -19,7 +25,8 @@ RUN cat silc-client-1.1.11.tar.bz2.sum | sha512sum -c -
 
 RUN tar xjvf silc-client-1.1.11.tar.bz2
 
-RUN cd silc-client-1.1.11 && ls -l && ./configure && make
+
+RUN cd silc-client-1.1.11 && ls -l && ./configure --enable-debug && make && make install
 RUN mv /silc-client-1.1.11/apps/irssi/src/fe-text/silc /usr/local/bin/
 RUN chmod a+x /usr/local/bin/silc
 
@@ -33,4 +40,5 @@ RUN chmod og-r /var/silc
 USER "silc"
 VOLUME [ "/var/silc" ]
 
+ENV LD_LIBRARY_PATH /usr/local/lib/:$LD_LIBRARY_PATH
 ENTRYPOINT [ "/usr/local/bin/silc", "--config=/var/silc",  "--home=/var/silc", "$@"]
